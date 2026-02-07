@@ -1,54 +1,100 @@
-import { Pressable, StyleSheet } from 'react-native';
-
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+
+import { HeartBackground } from '@/components/heart-background';
+import { RetroWindow } from '@/components/retro-window';
+import { valentineData } from '@/src/data/valentine';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [titleFirst, titleSecond] = valentineData.titulo.split(' ');
 
   return (
-    <ThemedView style={styles.screen}>
-      <ThemedView style={styles.header}>
-        <ThemedText type="title">Portada</ThemedText>
-        <ThemedText style={styles.subtitle}>Lista para una pregunta especial? 💌</ThemedText>
-      </ThemedView>
+    <SafeAreaView style={styles.screen}>
+      <HeartBackground />
+      <View style={styles.content}>
+        <View style={styles.titleRow}>
+          <Text style={[styles.title, styles.titleGreen]}>{titleFirst}</Text>
+          <Text style={[styles.title, styles.titleWhite]}>{titleSecond}</Text>
+        </View>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Ir a la pregunta"
-        style={styles.primaryButton}
-        onPress={() => router.push('/question')}>
-        <ThemedText type="defaultSemiBold" style={styles.buttonText}>
-          Comenzar ✨
-        </ThemedText>
-      </Pressable>
-    </ThemedView>
+        <RetroWindow style={styles.window} contentStyle={styles.windowContent}>
+          <Text style={styles.windowEmoji}>💟</Text>
+          <Text style={styles.windowText}>Una cartita retro para mi chiqui favorita.</Text>
+        </RetroWindow>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Abrir carta"
+          style={styles.primaryButton}
+          onPress={() => router.push('/question')}>
+          <Text style={styles.primaryButtonText}>Abrir 💌</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    padding: 24,
-    gap: 24,
-    justifyContent: 'center',
+    backgroundColor: '#0f2a33',
   },
-  header: {
+  content: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    justifyContent: 'center',
     alignItems: 'center',
+    gap: 24,
+  },
+  titleRow: {
+    flexDirection: 'row',
     gap: 8,
   },
-  subtitle: {
+  title: {
+    fontSize: 36,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  titleGreen: {
+    color: '#7bd389',
+  },
+  titleWhite: {
+    color: '#ffffff',
+  },
+  window: {
+    width: '100%',
+    maxWidth: 320,
+  },
+  windowContent: {
+    alignItems: 'center',
+    gap: 12,
+  },
+  windowEmoji: {
+    fontSize: 44,
+  },
+  windowText: {
     textAlign: 'center',
+    color: '#3a2c2a',
+    fontSize: 16,
   },
   primaryButton: {
-    alignSelf: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 999,
-    backgroundColor: '#FF5C8A',
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#3a2c2a',
+    backgroundColor: '#f2c94c',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 3, height: 4 },
+    shadowRadius: 4,
+    elevation: 4,
   },
-  buttonText: {
-    color: '#fff',
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2d2d2d',
   },
 });
