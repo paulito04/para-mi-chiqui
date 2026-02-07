@@ -1,4 +1,4 @@
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { HeartBackground } from '@/components/heart-background';
@@ -19,7 +19,11 @@ export default function HomeScreen() {
         </View>
 
         <RetroWindow style={styles.window} contentStyle={styles.windowContent}>
-          <Text style={styles.windowEmoji}>💟</Text>
+          <Image
+            source={require('../assets/letter.png')}
+            resizeMode="contain"
+            style={styles.windowLetter}
+          />
           <Text style={styles.windowText}>Una cartita retro para mi chiqui favorita.</Text>
         </RetroWindow>
 
@@ -71,8 +75,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  windowEmoji: {
-    fontSize: 44,
+  windowLetter: {
+    width: '100%',
+    height: 160,
+    maxWidth: 220,
   },
   windowText: {
     textAlign: 'center',
