@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -9,6 +9,7 @@ export default function LetterScreen() {
   const router = useRouter();
   const scale = useRef(new Animated.Value(0.92)).current;
   const opacity = useRef(new Animated.Value(0)).current;
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -36,11 +37,18 @@ export default function LetterScreen() {
 
         <Animated.View style={[styles.animatedWindow, { opacity, transform: [{ scale }] }]}>
           <RetroWindow contentStyle={styles.windowContent}>
-            <Image
-              source={require('../assets/letter.png')}
-              resizeMode="contain"
-              style={styles.letterImage}
-            />
+            {imageError ? (
+              <View style={styles.missingImage}>
+                <Text style={styles.missingImageText}>Carta no encontrada</Text>
+              </View>
+            ) : (
+              <Image
+                source={require('../assets/letter.png')}
+                resizeMode="contain"
+                style={styles.letterImage}
+                onError={() => setImageError(true)}
+              />
+            )}
           </RetroWindow>
         </Animated.View>
 
@@ -95,6 +103,16 @@ const styles = StyleSheet.create({
   letterImage: {
     width: '100%',
     height: 260,
+  },
+  missingImage: {
+    width: '100%',
+    height: 260,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  missingImageText: {
+    color: '#ffffff',
+    fontWeight: '600',
   },
   secondaryButton: {
     paddingVertical: 10,
