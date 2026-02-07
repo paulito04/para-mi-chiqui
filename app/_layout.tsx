@@ -13,8 +13,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="question" />
-        <Stack.Screen name="result" />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        <Stack.Screen name="letter" />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
