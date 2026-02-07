@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 
 const NO_MESSAGES = ['¿Segura? 😅', 'No tan rápido 😏', 'Piénsalo bien 💖', 'No me engañas 🙈', 'Última oportunidad ✨'];
 
-export default function HomeScreen() {
+export default function QuestionScreen() {
+  const router = useRouter();
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [noButtonSize, setNoButtonSize] = useState({ width: 0, height: 0 });
   const [noPosition, setNoPosition] = useState({ x: 20, y: 20 });
@@ -62,7 +64,7 @@ export default function HomeScreen() {
           accessibilityRole="button"
           accessibilityLabel="Sí, aceptar"
           style={[styles.yesButton, { transform: [{ scale: yesScale }] }]}
-          onPress={() => {}}>
+          onPress={() => router.push('/result')}>
           <ThemedText type="defaultSemiBold" style={styles.buttonText}>
             Sí 💘
           </ThemedText>
