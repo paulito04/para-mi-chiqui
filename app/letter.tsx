@@ -1,14 +1,13 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { HeartBackground } from '@/components/heart-background';
-import { RetroWindow } from '@/components/retro-window';
-import { valentineData } from '@/src/data/valentine';
+import { RetroWindow } from '@/src/components/RetroWindow';
 
 export default function LetterScreen() {
   const router = useRouter();
-  const scale = useRef(new Animated.Value(0.9)).current;
+  const scale = useRef(new Animated.Value(0.92)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -37,15 +36,11 @@ export default function LetterScreen() {
 
         <Animated.View style={[styles.animatedWindow, { opacity, transform: [{ scale }] }]}>
           <RetroWindow contentStyle={styles.windowContent}>
-            <Text style={styles.messageTitle}>{valentineData.mensaje}</Text>
-            <Text style={styles.messageSubtitle}>Para {valentineData.nombreChiqui}</Text>
-            <View style={styles.details}>
-              <Text style={styles.detailLine}>Valentine Date: {valentineData.fecha}</Text>
-              <Text style={styles.detailLine}>Hora: {valentineData.hora}</Text>
-              <Text style={styles.detailLine}>Lugar: {valentineData.lugar}</Text>
-              <Text style={styles.detailLine}>Dress code: {valentineData.dressCode}</Text>
-            </View>
-            <Text style={styles.heartEmoji}>💌</Text>
+            <Image
+              source={require('../assets/letter.png')}
+              resizeMode="contain"
+              style={styles.letterImage}
+            />
           </RetroWindow>
         </Animated.View>
 
@@ -95,28 +90,11 @@ const styles = StyleSheet.create({
   },
   windowContent: {
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
   },
-  messageTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#3a2c2a',
-  },
-  messageSubtitle: {
-    fontSize: 16,
-    color: '#6f4f45',
-  },
-  details: {
+  letterImage: {
     width: '100%',
-    gap: 6,
-    paddingVertical: 4,
-  },
-  detailLine: {
-    fontSize: 14,
-    color: '#3a2c2a',
-  },
-  heartEmoji: {
-    fontSize: 36,
+    height: 260,
   },
   secondaryButton: {
     paddingVertical: 10,
