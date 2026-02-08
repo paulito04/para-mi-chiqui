@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  Image,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -103,9 +104,11 @@ export default function EnvelopeScreen() {
         <Text style={styles.title}>Toca el papel…</Text>
 
         <View style={styles.envelopeWrapper}>
-          <View style={styles.envelopeBody}>
-            <View style={styles.envelopeFlap} />
-          </View>
+          <Image
+            source={require('../assets/envelope.png')}
+            style={styles.envelopeImage}
+            accessibilityLabel="Sobre"
+          />
 
           <Pressable
             accessibilityRole="button"
@@ -113,17 +116,20 @@ export default function EnvelopeScreen() {
             onPress={handlePaperPress}
             disabled={isAnimating}
             style={styles.paperPressable}>
-            <Animated.View
+            <Animated.Image
+              source={require('../assets/paper.png')}
               style={[
-                styles.paper,
+                styles.paperImage,
                 {
-                  transform: [{ translateY: paperTranslate }, { scale: paperScale }],
+                  transform: [
+                    { translateX: -110 },
+                    { translateY: paperTranslate },
+                    { scale: paperScale },
+                  ],
                 },
-              ]}>
-              <View style={styles.paperLine} />
-              <View style={styles.paperLine} />
-              <View style={styles.paperLineShort} />
-            </Animated.View>
+              ]}
+              accessibilityLabel="Papel"
+            />
           </Pressable>
         </View>
       </View>
@@ -180,56 +186,28 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   envelopeWrapper: {
-    width: '100%',
-    maxWidth: 320,
+    position: 'relative',
+    width: 320,
+    height: 260,
     alignItems: 'center',
-  },
-  envelopeBody: {
-    width: '100%',
-    height: 200,
-    borderRadius: 16,
-    backgroundColor: '#f6e6ef',
-    borderWidth: 2,
-    borderColor: '#d59ab0',
-    overflow: 'hidden',
     justifyContent: 'flex-end',
   },
-  envelopeFlap: {
-    width: '100%',
-    height: 90,
-    backgroundColor: '#f0cadb',
-    borderTopWidth: 2,
-    borderTopColor: '#d59ab0',
+  envelopeImage: {
+    width: 320,
+    height: 210,
+    resizeMode: 'contain',
+    zIndex: 1,
   },
   paperPressable: {
     position: 'absolute',
-    top: -24,
+    left: '50%',
+    top: 10,
+    zIndex: 2,
   },
-  paper: {
+  paperImage: {
     width: 220,
-    height: 150,
-    backgroundColor: '#fffaf4',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#d7b7a6',
-    padding: 16,
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  paperLine: {
-    height: 6,
-    backgroundColor: '#f2d8c8',
-    borderRadius: 4,
-    marginBottom: 10,
-  },
-  paperLineShort: {
-    height: 6,
-    width: '70%',
-    backgroundColor: '#f2d8c8',
-    borderRadius: 4,
+    height: 160,
+    resizeMode: 'contain',
+    zIndex: 2,
   },
 });
