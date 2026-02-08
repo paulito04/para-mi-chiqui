@@ -6,7 +6,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      {/* Fondo con corazones (simple y bonito) */}
+      {/* Fondo con corazones */}
       <View style={styles.bg}>
         <Text style={[styles.heart, { top: 80, left: 30 }]}>💗</Text>
         <Text style={[styles.heart, { top: 140, right: 40, opacity: 0.35 }]}>💞</Text>
@@ -29,16 +29,14 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.windowBody}>
-            {/* AQUÍ VA TU SOBRE (IMAGEN 2) */}
+            {/* Imagen del sobre/carta */}
             <Image
-              source={require("../assets/letter.png")} // <- tu sobre pixel (imagen 2)
+              source={require("../assets/letter.png")}
               style={styles.envelopeImage}
               resizeMode="contain"
             />
 
-            <Text style={styles.subtitle}>
-              Una cartita retro para mi chiqui favorita.
-            </Text>
+            <Text style={styles.subtitle}>Una cartita retro para mi chiqui favorita.</Text>
           </View>
         </View>
 
@@ -147,3 +145,4 @@ const styles = StyleSheet.create({
     color: "#2b1d1d",
   },
 });
+
