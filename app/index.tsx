@@ -1,148 +1,151 @@
-import { useRouter } from "expo-router";
-import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
-export default function HomeScreen() {
-  const router = useRouter();
+const letterImage = require('../assets/letter.png');
 
+const hearts = [
+  { id: 1, size: 18, top: 80, left: 24, opacity: 0.35 },
+  { id: 2, size: 28, top: 140, right: 30, opacity: 0.4 },
+  { id: 3, size: 22, top: 220, left: 80, opacity: 0.3 },
+  { id: 4, size: 34, top: 300, right: 70, opacity: 0.28 },
+  { id: 5, size: 20, top: 420, left: 40, opacity: 0.35 },
+  { id: 6, size: 26, top: 520, right: 20, opacity: 0.32 },
+];
+
+export default function Index() {
   return (
-    <SafeAreaView style={styles.screen}>
-      {/* Fondo con corazones */}
-      <View style={styles.bg}>
-        <Text style={[styles.heart, { top: 80, left: 30 }]}>💗</Text>
-        <Text style={[styles.heart, { top: 140, right: 40, opacity: 0.35 }]}>💞</Text>
-        <Text style={[styles.heart, { bottom: 120, left: 60, opacity: 0.25 }]}>💕</Text>
-        <Text style={[styles.heart, { bottom: 90, right: 55, opacity: 0.35 }]}>💓</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.heartsLayer} pointerEvents="none">
+        {hearts.map((heart) => (
+          <Text
+            key={heart.id}
+            style={[
+              styles.heart,
+              {
+                fontSize: heart.size,
+                top: heart.top,
+                left: heart.left,
+                right: heart.right,
+                opacity: heart.opacity,
+              },
+            ]}
+          >
+            ♥
+          </Text>
+        ))}
       </View>
 
-      <View style={styles.content}>
-        <Text style={styles.title}>
-          <Text style={styles.titleGreen}>Valentine</Text>{" "}
-          <Text style={styles.titleWhite}>Letter</Text>
-        </Text>
+      <Text style={styles.title}>
+        <Text style={styles.titleAccent}>Valentine </Text>
+        <Text style={styles.titleMain}>Letter</Text>
+      </Text>
 
-        {/* Ventana retro */}
-        <View style={styles.window}>
-          <View style={styles.windowTop}>
-            <View style={[styles.dot, { backgroundColor: "#f36d6d" }]} />
-            <View style={[styles.dot, { backgroundColor: "#f3d36d" }]} />
-            <View style={[styles.dot, { backgroundColor: "#7fe08a" }]} />
-          </View>
-
-          <View style={styles.windowBody}>
-            {/* Imagen del sobre/carta */}
-            <Image
-              source={require("../assets/letter.png")}
-              style={styles.envelopeImage}
-              resizeMode="contain"
-            />
-
-            <Text style={styles.subtitle}>Una cartita retro para mi chiqui favorita.</Text>
-          </View>
+      <View style={styles.window}>
+        <View style={styles.windowHeader}>
+          <View style={[styles.windowDot, styles.windowDotRed]} />
+          <View style={[styles.windowDot, styles.windowDotYellow]} />
+          <View style={[styles.windowDot, styles.windowDotGreen]} />
         </View>
-
-        <Pressable
-          style={styles.button}
-          onPress={() => router.push("/envelope")}
-          accessibilityRole="button"
-          accessibilityLabel="Abrir carta"
-        >
-          <Text style={styles.buttonText}>Abrir 💌</Text>
-        </Pressable>
+        <View style={styles.windowBody}>
+          <Image source={letterImage} style={styles.letterImage} resizeMode="contain" />
+        </View>
       </View>
+
+      <Text style={styles.subtitle}>Una cartita retro para mi chiqui favorita.</Text>
+
+      <Pressable style={styles.button} onPress={() => console.log('ABRIR')}>
+        <Text style={styles.buttonText}>Abrir 💌</Text>
+      </Pressable>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  container: {
     flex: 1,
-    backgroundColor: "#12353b",
+    backgroundColor: '#0b2d22',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 32,
   },
-  bg: {
+  heartsLayer: {
     ...StyleSheet.absoluteFillObject,
   },
   heart: {
-    position: "absolute",
-    fontSize: 26,
-    opacity: 0.5,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
+    position: 'absolute',
+    color: '#3d7a63',
   },
   title: {
-    fontSize: 38,
-    fontWeight: "800",
-    marginBottom: 18,
+    fontSize: 34,
+    fontWeight: '700',
+    marginBottom: 28,
+    textAlign: 'center',
   },
-  titleGreen: {
-    color: "#8ee09a",
+  titleAccent: {
+    color: '#4ade80',
   },
-  titleWhite: {
-    color: "#ffffff",
+  titleMain: {
+    color: '#ffffff',
   },
   window: {
-    width: "100%",
-    maxWidth: 360,
+    width: '100%',
     borderRadius: 18,
-    backgroundColor: "#f7efe8",
-    borderWidth: 3,
-    borderColor: "#2b1d1d",
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  windowTop: {
-    height: 44,
-    paddingHorizontal: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: "#f0d1c8",
-    borderBottomWidth: 3,
-    borderBottomColor: "#2b1d1d",
-  },
-  dot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
     borderWidth: 2,
-    borderColor: "#2b1d1d",
+    borderColor: '#b7e0cc',
+    backgroundColor: '#123328',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  windowHeader: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#1b4234',
+  },
+  windowDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  windowDotRed: {
+    backgroundColor: '#ff6b6b',
+  },
+  windowDotYellow: {
+    backgroundColor: '#ffd166',
+  },
+  windowDotGreen: {
+    backgroundColor: '#6ee7b7',
   },
   windowBody: {
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    alignItems: "center",
-    gap: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 28,
   },
-  envelopeImage: {
-    width: 220,
-    height: 170,
+  letterImage: {
+    width: '100%',
+    height: 210,
   },
   subtitle: {
-    textAlign: "center",
+    color: '#e6f5ed',
     fontSize: 16,
-    color: "#2b1d1d",
-    fontWeight: "600",
+    textAlign: 'center',
+    marginTop: 20,
+    marginBottom: 20,
   },
   button: {
-    marginTop: 18,
-    backgroundColor: "#f0c44b",
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 3,
-    borderColor: "#2b1d1d",
+    backgroundColor: '#4ade80',
+    paddingHorizontal: 26,
+    paddingVertical: 12,
+    borderRadius: 999,
   },
   buttonText: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#2b1d1d",
+    color: '#0b2d22',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
-
