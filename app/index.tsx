@@ -1,89 +1,55 @@
-import { useRef, useState } from 'react';
-import {
-  Animated,
-  Easing,
-  Image,
-  Pressable,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-
-import { HeartBackground } from '@/components/heart-background';
-import { RetroWindow } from '@/components/retro-window';
-import { valentineData } from '@/src/data/valentine';
+import { useRouter } from "expo-router";
+import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [titleFirst, titleSecond] = valentineData.titulo.split(' ');
-  const [isAnimating, setIsAnimating] = useState(false);
-  const letterScale = useRef(new Animated.Value(1)).current;
-  const restOpacity = useRef(new Animated.Value(1)).current;
-
-  const handleOpen = () => {
-    if (isAnimating) {
-      return;
-    }
-    console.log('OPEN_PRESS');
-    setIsAnimating(true);
-    Animated.parallel([
-      Animated.timing(letterScale, {
-        toValue: 2.2,
-        duration: 700,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(restOpacity, {
-        toValue: 0,
-        duration: 700,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      router.push('/envelope');
-      letterScale.setValue(1);
-      restOpacity.setValue(1);
-      setIsAnimating(false);
-    });
-  };
 
   return (
     <SafeAreaView style={styles.screen}>
-      <HeartBackground />
+      {/* Fondo con corazones (simple y bonito) */}
+      <View style={styles.bg}>
+        <Text style={[styles.heart, { top: 80, left: 30 }]}>💗</Text>
+        <Text style={[styles.heart, { top: 140, right: 40, opacity: 0.35 }]}>💞</Text>
+        <Text style={[styles.heart, { bottom: 120, left: 60, opacity: 0.25 }]}>💕</Text>
+        <Text style={[styles.heart, { bottom: 90, right: 55, opacity: 0.35 }]}>💓</Text>
+      </View>
+
       <View style={styles.content}>
-        <Animated.View style={[styles.titleRow, { opacity: restOpacity }]}>
-          <Text style={[styles.title, styles.titleGreen]}>{titleFirst}</Text>
-          <Text style={[styles.title, styles.titleWhite]}>{titleSecond}</Text>
-        </Animated.View>
+        <Text style={styles.title}>
+          <Text style={styles.titleGreen}>Valentine</Text>{" "}
+          <Text style={styles.titleWhite}>Letter</Text>
+        </Text>
 
-        <RetroWindow style={styles.window} contentStyle={styles.windowContent}>
-          <Animated.View
-            style={{
-              transform: [{ scale: letterScale }],
-            }}>
+        {/* Ventana retro */}
+        <View style={styles.window}>
+          <View style={styles.windowTop}>
+            <View style={[styles.dot, { backgroundColor: "#f36d6d" }]} />
+            <View style={[styles.dot, { backgroundColor: "#f3d36d" }]} />
+            <View style={[styles.dot, { backgroundColor: "#7fe08a" }]} />
+          </View>
+
+          <View style={styles.windowBody}>
+            {/* AQUÍ VA TU SOBRE (IMAGEN 2) */}
             <Image
-              source={require('../assets/letter.png')}
+              source={require("../assets/letter.png")} // <- tu sobre pixel (imagen 2)
+              style={styles.envelopeImage}
               resizeMode="contain"
-              style={styles.windowLetter}
             />
-          </Animated.View>
-          <Animated.Text style={[styles.windowText, { opacity: restOpacity }]}>
-            Una cartita retro para mi chiqui favorita.
-          </Animated.Text>
-        </RetroWindow>
 
-        <Animated.View style={{ opacity: restOpacity }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Abrir carta"
-            style={[styles.primaryButton, isAnimating && styles.primaryButtonDisabled]}
-            onPress={handleOpen}
-            disabled={isAnimating}>
-            <Text style={styles.primaryButtonText}>Abrir 💌</Text>
-          </Pressable>
-        </Animated.View>
+            <Text style={styles.subtitle}>
+              Una cartita retro para mi chiqui favorita.
+            </Text>
+          </View>
+        </View>
+
+        <Pressable
+          style={styles.button}
+          onPress={() => router.push("/envelope")}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir carta"
+        >
+          <Text style={styles.buttonText}>Abrir 💌</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -92,68 +58,92 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#0f2a33',
+    backgroundColor: "#12353b",
+  },
+  bg: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  heart: {
+    position: "absolute",
+    fontSize: 26,
+    opacity: 0.5,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 24,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    gap: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
   },
   title: {
-    fontSize: 36,
-    fontWeight: '700',
-    letterSpacing: 1,
+    fontSize: 38,
+    fontWeight: "800",
+    marginBottom: 18,
   },
   titleGreen: {
-    color: '#7bd389',
+    color: "#8ee09a",
   },
   titleWhite: {
-    color: '#ffffff',
+    color: "#ffffff",
   },
   window: {
-    width: '100%',
-    maxWidth: 320,
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 18,
+    backgroundColor: "#f7efe8",
+    borderWidth: 3,
+    borderColor: "#2b1d1d",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 10,
+    elevation: 8,
   },
-  windowContent: {
-    alignItems: 'center',
-    gap: 12,
+  windowTop: {
+    height: 44,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#f0d1c8",
+    borderBottomWidth: 3,
+    borderBottomColor: "#2b1d1d",
   },
-  windowLetter: {
-    width: '100%',
-    height: 160,
-    maxWidth: 220,
-  },
-  windowText: {
-    textAlign: 'center',
-    color: '#3a2c2a',
-    fontSize: 16,
-  },
-  primaryButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 28,
-    borderRadius: 12,
+  dot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     borderWidth: 2,
-    borderColor: '#3a2c2a',
-    backgroundColor: '#f2c94c',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 3, height: 4 },
-    shadowRadius: 4,
-    elevation: 4,
+    borderColor: "#2b1d1d",
   },
-  primaryButtonDisabled: {
-    opacity: 0.7,
+  windowBody: {
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    gap: 14,
   },
-  primaryButtonText: {
+  envelopeImage: {
+    width: 220,
+    height: 170,
+  },
+  subtitle: {
+    textAlign: "center",
     fontSize: 16,
-    fontWeight: '700',
-    color: '#2d2d2d',
+    color: "#2b1d1d",
+    fontWeight: "600",
+  },
+  button: {
+    marginTop: 18,
+    backgroundColor: "#f0c44b",
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 3,
+    borderColor: "#2b1d1d",
+  },
+  buttonText: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#2b1d1d",
   },
 });
