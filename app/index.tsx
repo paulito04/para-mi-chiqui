@@ -20,30 +20,31 @@ export default function HomeScreen() {
   const [titleFirst, titleSecond] = valentineData.titulo.split(' ');
   const [isAnimating, setIsAnimating] = useState(false);
   const letterScale = useRef(new Animated.Value(1)).current;
-  const letterOpacity = useRef(new Animated.Value(1)).current;
+  const restOpacity = useRef(new Animated.Value(1)).current;
 
   const handleOpen = () => {
     if (isAnimating) {
       return;
     }
+    console.log('OPEN_PRESS');
     setIsAnimating(true);
     Animated.parallel([
       Animated.timing(letterScale, {
-        toValue: 1.12,
-        duration: 600,
+        toValue: 2.2,
+        duration: 700,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-      Animated.timing(letterOpacity, {
-        toValue: 0.2,
-        duration: 600,
+      Animated.timing(restOpacity, {
+        toValue: 0,
+        duration: 700,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start(() => {
       router.push('/envelope');
       letterScale.setValue(1);
-      letterOpacity.setValue(1);
+      restOpacity.setValue(1);
       setIsAnimating(false);
     });
   };
@@ -52,15 +53,14 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.screen}>
       <HeartBackground />
       <View style={styles.content}>
-        <View style={styles.titleRow}>
+        <Animated.View style={[styles.titleRow, { opacity: restOpacity }]}>
           <Text style={[styles.title, styles.titleGreen]}>{titleFirst}</Text>
           <Text style={[styles.title, styles.titleWhite]}>{titleSecond}</Text>
-        </View>
+        </Animated.View>
 
         <RetroWindow style={styles.window} contentStyle={styles.windowContent}>
           <Animated.View
             style={{
-              opacity: letterOpacity,
               transform: [{ scale: letterScale }],
             }}>
             <Image
@@ -69,17 +69,21 @@ export default function HomeScreen() {
               style={styles.windowLetter}
             />
           </Animated.View>
-          <Text style={styles.windowText}>Una cartita retro para mi chiqui favorita.</Text>
+          <Animated.Text style={[styles.windowText, { opacity: restOpacity }]}>
+            Una cartita retro para mi chiqui favorita.
+          </Animated.Text>
         </RetroWindow>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Abrir carta"
-          style={[styles.primaryButton, isAnimating && styles.primaryButtonDisabled]}
-          onPress={handleOpen}
-          disabled={isAnimating}>
-          <Text style={styles.primaryButtonText}>Abrir 💌</Text>
-        </Pressable>
+        <Animated.View style={{ opacity: restOpacity }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Abrir carta"
+            style={[styles.primaryButton, isAnimating && styles.primaryButtonDisabled]}
+            onPress={handleOpen}
+            disabled={isAnimating}>
+            <Text style={styles.primaryButtonText}>Abrir 💌</Text>
+          </Pressable>
+        </Animated.View>
       </View>
     </SafeAreaView>
   );
