@@ -41,9 +41,22 @@ export default function QuestionScreen() {
   const [arenaSize, setArenaSize] = useState<Size>({ width: 0, height: 0 });
   const [noSize, setNoSize] = useState<Size>({ width: 0, height: 0 });
   const [yesRect, setYesRect] = useState<Rect>({ x: 0, y: 0, width: 0, height: 0 });
-  const [noPosition, setNoPosition] = useState<Position>({ x: 32, y: 24 });
+  const [noPosition, setNoPosition] = useState<Position>({ x: 24, y: 20 });
   const [attempts, setAttempts] = useState(0);
   const yesScale = useRef(new Animated.Value(1)).current;
+  const initializedPosition = useRef(false);
+
+  const phrases = useMemo(
+    () => [
+      '¿Segura? Intenta otra vez...',
+      'Creo que el botón se movió 🙈',
+      'Uy, casi... prueba de nuevo.',
+      'El no está tímido hoy.',
+      'Te sigo poniendo a prueba 💘',
+      'Me niego a rendirme... ¡intenta!',
+    ],
+    []
+  );
 
   const hearts = useMemo<Heart[]>(() => {
     return Array.from({ length: 18 }, (_, index) => ({
@@ -63,6 +76,23 @@ export default function QuestionScreen() {
       friction: 6,
     }).start();
   }, [attempts, yesScale]);
+
+  useEffect(() => {
+    if (
+      initializedPosition.current ||
+      !arenaSize.width ||
+      !arenaSize.height ||
+      !noSize.width ||
+      !noSize.height ||
+      !yesRect.width ||
+      !yesRect.height
+    ) {
+      return;
+    }
+
+    moveNoButton();
+    initializedPosition.current = true;
+  }, [arenaSize, noSize, yesRect]);
 
   const handleArenaLayout = (event: LayoutChangeEvent) => {
     const { width: layoutWidth, height: layoutHeight } = event.nativeEvent.layout;
@@ -93,6 +123,12 @@ export default function QuestionScreen() {
       return false;
     }
 
+    const yesScaleValue = 1 + attempts * 0.06;
+    const scaledYesWidth = yesRect.width * yesScaleValue;
+    const scaledYesHeight = yesRect.height * yesScaleValue;
+    const yesLeft = yesRect.x - (scaledYesWidth - yesRect.width) / 2;
+    const yesTop = yesRect.y - (scaledYesHeight - yesRect.height) / 2;
+
     const candidateRect = {
       left: candidate.x - MIN_DISTANCE,
       right: candidate.x + noSize.width + MIN_DISTANCE,
@@ -101,10 +137,10 @@ export default function QuestionScreen() {
     };
 
     const yesBounds = {
-      left: yesRect.x,
-      right: yesRect.x + yesRect.width,
-      top: yesRect.y,
-      bottom: yesRect.y + yesRect.height,
+      left: yesLeft,
+      right: yesLeft + scaledYesWidth,
+      top: yesTop,
+      bottom: yesTop + scaledYesHeight,
     };
 
     return !(
@@ -135,6 +171,10 @@ export default function QuestionScreen() {
     setAttempts((current) => current + 1);
     moveNoButton();
   };
+
+  const attemptMessage = attempts
+    ? phrases[(attempts - 1) % phrases.length]
+    : 'Intenta tocar el no...';
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -167,15 +207,19 @@ export default function QuestionScreen() {
           <Text style={styles.paperPrompt}>Elige:</Text>
         </View>
 
+        <Text style={styles.attemptText}>{attemptMessage}</Text>
+
         <View style={styles.buttonArena} onLayout={handleArenaLayout}>
-          <AnimatedPressable
-            accessibilityRole="button"
-            accessibilityLabel="Sí, aceptar"
-            onLayout={handleYesLayout}
-            style={[styles.yesButton, { transform: [{ scale: yesScale }], zIndex: 2 }]}
-            onPress={() => router.push('/result?answer=yes')}>
-            <Text style={styles.yesButtonText}>Sí 💞</Text>
-          </AnimatedPressable>
+          <View style={styles.yesButtonWrap}>
+            <AnimatedPressable
+              accessibilityRole="button"
+              accessibilityLabel="Sí, aceptar"
+              onLayout={handleYesLayout}
+              style={[styles.yesButton, { transform: [{ scale: yesScale }], zIndex: 3 }]}
+              onPress={() => router.push('/result?answer=yes')}>
+              <Text style={styles.yesButtonText}>Sí 💞</Text>
+            </AnimatedPressable>
+          </View>
 
           <Pressable
             accessibilityRole="button"
@@ -193,16 +237,6 @@ export default function QuestionScreen() {
             <Text style={styles.noButtonText}>No 🙈</Text>
           </Pressable>
         </View>
-
-        {attempts >= 8 ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Aceptar no"
-            style={styles.okButton}
-            onPress={() => router.push('/result?answer=no')}>
-            <Text style={styles.okButtonText}>Ok… 😭</Text>
-          </Pressable>
-        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -264,6 +298,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#7a2f4d',
   },
+  attemptText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#7a2f4d',
+    textAlign: 'center',
+  },
   buttonArena: {
     width: '100%',
     maxWidth: 340,
@@ -272,10 +312,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderWidth: 2,
     borderColor: '#e0b7a5',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
     position: 'relative',
     paddingBottom: 24,
+  },
+  yesButtonWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 20,
+    alignItems: 'center',
+    zIndex: 3,
   },
   yesButton: {
     paddingVertical: 10,
@@ -303,23 +349,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#3a2c2a',
     backgroundColor: '#ef6b6b',
-    zIndex: 1,
+    zIndex: 2,
   },
   noButtonText: {
     color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  okButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#7a2f4d',
-    backgroundColor: '#fff8f1',
-  },
-  okButtonText: {
-    color: '#7a2f4d',
     fontWeight: '700',
     fontSize: 15,
   },

@@ -52,22 +52,24 @@ export default function EnvelopeScreen() {
     if (isAnimating) {
       return;
     }
+    console.log('ENVELOPE_TAP');
     setIsAnimating(true);
 
     Animated.parallel([
       Animated.timing(paperTranslate, {
         toValue: -140,
-        duration: 600,
+        duration: 700,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(paperScale, {
-        toValue: 1.05,
-        duration: 600,
+        toValue: 1.08,
+        duration: 700,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start(() => {
+      console.log('PAPER_OUT_DONE');
       router.push('/question');
       paperTranslate.setValue(0);
       paperScale.setValue(1);
