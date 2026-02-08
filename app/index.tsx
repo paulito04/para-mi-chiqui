@@ -1,4 +1,14 @@
-import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  Image,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { HeartBackground } from '@/components/heart-background';
@@ -8,6 +18,35 @@ import { valentineData } from '@/src/data/valentine';
 export default function HomeScreen() {
   const router = useRouter();
   const [titleFirst, titleSecond] = valentineData.titulo.split(' ');
+  const [isAnimating, setIsAnimating] = useState(false);
+  const letterScale = useRef(new Animated.Value(1)).current;
+  const letterOpacity = useRef(new Animated.Value(1)).current;
+
+  const handleOpen = () => {
+    if (isAnimating) {
+      return;
+    }
+    setIsAnimating(true);
+    Animated.parallel([
+      Animated.timing(letterScale, {
+        toValue: 1.12,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(letterOpacity, {
+        toValue: 0.2,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      router.push('/envelope');
+      letterScale.setValue(1);
+      letterOpacity.setValue(1);
+      setIsAnimating(false);
+    });
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -19,19 +58,26 @@ export default function HomeScreen() {
         </View>
 
         <RetroWindow style={styles.window} contentStyle={styles.windowContent}>
-          <Image
-            source={require('../assets/letter.png')}
-            resizeMode="contain"
-            style={styles.windowLetter}
-          />
+          <Animated.View
+            style={{
+              opacity: letterOpacity,
+              transform: [{ scale: letterScale }],
+            }}>
+            <Image
+              source={require('../assets/letter.png')}
+              resizeMode="contain"
+              style={styles.windowLetter}
+            />
+          </Animated.View>
           <Text style={styles.windowText}>Una cartita retro para mi chiqui favorita.</Text>
         </RetroWindow>
 
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Abrir carta"
-          style={styles.primaryButton}
-          onPress={() => router.push('/question')}>
+          style={[styles.primaryButton, isAnimating && styles.primaryButtonDisabled]}
+          onPress={handleOpen}
+          disabled={isAnimating}>
           <Text style={styles.primaryButtonText}>Abrir 💌</Text>
         </Pressable>
       </View>
@@ -97,6 +143,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 3, height: 4 },
     shadowRadius: 4,
     elevation: 4,
+  },
+  primaryButtonDisabled: {
+    opacity: 0.7,
   },
   primaryButtonText: {
     fontSize: 16,
