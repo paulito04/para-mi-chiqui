@@ -14,9 +14,18 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRootNavigationState, useRouter } from 'expo-router';
 
-const MAX_YES_SCALE = 1.8;
+const MAX_YES_SCALE = 2.2;
 const YES_SCALE_STEP = 0.08;
-const NO_MIN_OPACITY = 0.6;
+const NO_OPACITY_REDUCED = 0.7;
+const NO_SCALE_REDUCED = 0.88;
+const NO_SCALE_THRESHOLD = 1.6;
+const CHOICE_BOX_WIDTH = 300;
+const CHOICE_BOX_HEIGHT = 240;
+const NO_BUTTON_WIDTH = 112;
+const NO_BUTTON_HEIGHT = 44;
+const defaultKawaiiImg = require('../assets/illustrations/kawaii.png');
+const noImg = require('../assets/illustrations/No.png');
+const siImg = require('../assets/illustrations/Si.png');
 const NO_MESSAGES = [
   '¿Segura, mi chiqui?',
   'Piénsalo otra vez…',
@@ -47,6 +56,15 @@ type FloatingHeart = {
   driftDistance: number;
 };
 
+const getRandomNoPosition = () => {
+  const maxX = CHOICE_BOX_WIDTH - NO_BUTTON_WIDTH;
+  const maxY = CHOICE_BOX_HEIGHT - NO_BUTTON_HEIGHT;
+  return {
+    x: Math.random() * maxX,
+    y: Math.random() * maxY,
+  };
+};
+
 export default function Question() {
   const router = useRouter();
   const rootState = useRootNavigationState();
@@ -58,6 +76,11 @@ export default function Question() {
   const [showYesMessage, setShowYesMessage] = useState(false);
   const [noMessageIndex, setNoMessageIndex] = useState(0);
   const [noOpacity, setNoOpacity] = useState(1);
+  const [noScale, setNoScale] = useState(1);
+  const [noPos, setNoPos] = useState(() => getRandomNoPosition());
+  const [noCount, setNoCount] = useState(0);
+  const [accepted, setAccepted] = useState(false);
+  const [mainImage, setMainImage] = useState(defaultKawaiiImg);
 
   const hasResultRoute = Boolean(rootState?.routeNames?.includes('result'));
 
@@ -180,19 +203,28 @@ export default function Question() {
 
   const handleNoAttempt = useCallback(() => {
     setNoMessageIndex((prev) => (prev + 1) % NO_MESSAGES.length);
-    setNoOpacity((prev) => Math.max(NO_MIN_OPACITY, prev - 0.06));
-
-    const nextScale = Math.min(MAX_YES_SCALE, yesScaleValue.current + YES_SCALE_STEP);
-    yesScaleValue.current = nextScale;
-    Animated.spring(yesScale, {
-      toValue: nextScale,
-      useNativeDriver: true,
-      friction: 6,
-      tension: 120,
-    }).start();
+    setMainImage(noImg);
+    setNoPos(getRandomNoPosition());
+    setNoCount((prev) => {
+      const nextCount = prev + 1;
+      const nextScale = Math.min(MAX_YES_SCALE, 1 + nextCount * YES_SCALE_STEP);
+      yesScaleValue.current = nextScale;
+      Animated.spring(yesScale, {
+        toValue: nextScale,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 120,
+      }).start();
+      const reduceNoVisuals = nextScale > NO_SCALE_THRESHOLD;
+      setNoOpacity(reduceNoVisuals ? NO_OPACITY_REDUCED : 1);
+      setNoScale(reduceNoVisuals ? NO_SCALE_REDUCED : 1);
+      return nextCount;
+    });
   }, [yesScale]);
 
   const handleYes = useCallback(() => {
+    setMainImage(siImg);
+    setAccepted(true);
     if (hasResultRoute) {
       router.push('/result');
       return;
@@ -264,15 +296,11 @@ export default function Question() {
         <View style={styles.card}>
           <Text style={styles.title}>¿Quieres ser mi San Valentín, mi Chiqui?</Text>
 
-          <Image
-            source={require('../assets/illustrations/kawaii.png')}
-            style={styles.illustration}
-            resizeMode="contain"
-          />
+          <Image source={mainImage} style={styles.illustration} resizeMode="contain" />
 
           <Text style={styles.subMessage}>{NO_MESSAGES[noMessageIndex]}</Text>
 
-          <View style={styles.buttonArena}>
+          <View style={styles.choiceBox}>
             <Animated.View style={[styles.yesButtonWrapper, { transform: [{ scale: yesScaleCombined }] }]}>
               <Pressable style={styles.yesButton} onPress={handleYesPress}>
                 <LinearGradient
@@ -288,12 +316,18 @@ export default function Question() {
               </Pressable>
             </Animated.View>
 
-            <Pressable style={[styles.noButton, { opacity: noOpacity }]} onPressIn={handleNoAttempt}>
+            <Pressable
+              style={[
+                styles.noButton,
+                { left: noPos.x, top: noPos.y, opacity: noOpacity, transform: [{ scale: noScale }] },
+              ]}
+              onPressIn={handleNoAttempt}
+            >
               <Text style={styles.buttonText}>No</Text>
             </Pressable>
           </View>
 
-          {showYesMessage ? <Text style={styles.successMessage}>¡Siiii! 💖</Text> : null}
+          {showYesMessage || accepted ? <Text style={styles.successMessage}>¡Siiii! 💖</Text> : null}
         </View>
       </SafeAreaView>
     </LinearGradient>
@@ -358,19 +392,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 16,
   },
-  buttonArena: {
-    width: '100%',
-    minHeight: 96,
-    borderRadius: 20,
+  choiceBox: {
+    width: CHOICE_BOX_WIDTH,
+    height: CHOICE_BOX_HEIGHT,
+    alignSelf: 'center',
+    borderRadius: 24,
     backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderWidth: 1,
     borderColor: 'rgba(247, 199, 199, 0.7)',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 16,
   },
   yesButtonWrapper: {
     zIndex: 2,
@@ -403,9 +434,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.45)',
   },
   noButton: {
+    position: 'absolute',
     backgroundColor: '#f5d8cc',
+    width: NO_BUTTON_WIDTH,
+    height: NO_BUTTON_HEIGHT,
     paddingHorizontal: 26,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#efc1b1',
@@ -414,6 +448,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   buttonText: {
     color: '#5a2f3b',
