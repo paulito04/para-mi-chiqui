@@ -1,7 +1,10 @@
-import { Animated, Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { useEffect, useRef, useState } from 'react';
+import { Animated, Image, Modal, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+// If expo-video isn't installed yet, run: npx expo install expo-video
+import { VideoView, useVideoPlayer } from 'expo-video';
 
 const letterImage = require('../assets/letter.png');
+const cartaAsset = require('../assets/videos/Carta.mp4');
 const snoopyFrames = [
   require('../assets/snoopy/1.png'),
   require('../assets/snoopy/2.png'),
@@ -26,6 +29,10 @@ export default function Index() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const heartAnims = useRef(hearts.map(() => new Animated.Value(0))).current;
   const [snoopyFrameIndex, setSnoopyFrameIndex] = useState(0);
+  const [isVideoVisible, setIsVideoVisible] = useState(false);
+  const player = useVideoPlayer(cartaAsset, (playerInstance) => {
+    playerInstance.loop = false;
+  });
 
   useEffect(() => {
     Animated.loop(
@@ -77,6 +84,37 @@ export default function Index() {
 
     return () => clearInterval(intervalId);
   }, []);
+
+  const closeVideoModal = useCallback(() => {
+    setIsVideoVisible(false);
+    player.pause();
+    player.currentTime = 0;
+  }, [player]);
+
+  useEffect(() => {
+    if (isVideoVisible) {
+      player.currentTime = 0;
+      player.play();
+      return;
+    }
+
+    player.pause();
+    player.currentTime = 0;
+  }, [isVideoVisible, player]);
+
+  useEffect(() => {
+    if (!isVideoVisible) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      if (player.duration > 0 && player.currentTime >= player.duration) {
+        closeVideoModal();
+      }
+    }, 250);
+
+    return () => clearInterval(intervalId);
+  }, [closeVideoModal, isVideoVisible, player]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -138,7 +176,10 @@ export default function Index() {
             pointerEvents="none"
             resizeMode="contain"
           />
-          <Pressable style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]} onPress={() => console.log('ABRIR')}>
+          <Pressable
+            style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+            onPress={() => setIsVideoVisible(true)}
+          >
             <Text style={styles.buttonText}>Abrir 💌</Text>
           </Pressable>
           <Image
@@ -149,6 +190,20 @@ export default function Index() {
           />
         </View>
       </Animated.View>
+
+      <Modal
+        visible={isVideoVisible}
+        animationType="fade"
+        presentationStyle="fullScreen"
+        onRequestClose={closeVideoModal}
+      >
+        <View style={styles.videoModalContainer}>
+          <VideoView player={player} style={styles.video} contentFit="contain" />
+          <Pressable style={styles.closeButton} onPress={closeVideoModal}>
+            <Text style={styles.closeButtonText}>Cerrar</Text>
+          </Pressable>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -282,5 +337,30 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     letterSpacing: 0.3,
+  },
+  videoModalContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  video: {
+    width: '100%',
+    height: '100%',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 52,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
 });
