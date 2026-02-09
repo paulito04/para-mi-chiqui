@@ -1,7 +1,17 @@
 import { Animated, Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const letterImage = require('../assets/letter.png');
+const snoopyFrames = [
+  require('../assets/snoopy/1.png'),
+  require('../assets/snoopy/2.png'),
+  require('../assets/snoopy/3.png'),
+  require('../assets/snoopy/4.png'),
+  require('../assets/snoopy/5.png'),
+  require('../assets/snoopy/6.png'),
+  require('../assets/snoopy/7.png'),
+  require('../assets/snoopy/8.png'),
+];
 
 const hearts = [
   { id: 1, size: 18, top: 70, left: 26, opacity: 0.18, drift: 8, duration: 6200, delay: 0 },
@@ -15,6 +25,7 @@ const hearts = [
 export default function Index() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const heartAnims = useRef(hearts.map(() => new Animated.Value(0))).current;
+  const [snoopyFrameIndex, setSnoopyFrameIndex] = useState(0);
 
   useEffect(() => {
     Animated.loop(
@@ -58,11 +69,26 @@ export default function Index() {
     };
   }, [heartAnims, pulseAnim]);
 
+  useEffect(() => {
+    const frameCount = snoopyFrames.length;
+    const intervalId = setInterval(() => {
+      setSnoopyFrameIndex((prev) => (prev + 1) % frameCount);
+    }, 140);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.backgroundGlowTop} pointerEvents="none" />
       <View style={styles.backgroundGlowBottom} pointerEvents="none" />
       <View style={styles.paperTexture} pointerEvents="none" />
+      <Image
+        source={snoopyFrames[snoopyFrameIndex]}
+        style={styles.snoopy}
+        pointerEvents="none"
+        resizeMode="contain"
+      />
       <View style={styles.heartsLayer} pointerEvents="none">
         {hearts.map((heart, index) => (
           <Animated.Text
@@ -210,6 +236,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
     lineHeight: 22,
+  },
+  snoopy: {
+    position: 'absolute',
+    top: 110,
+    right: 24,
+    width: 64,
+    height: 64,
   },
   buttonWrapper: {
     marginTop: 24,
