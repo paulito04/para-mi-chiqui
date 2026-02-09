@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
-  Image,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -11,6 +10,7 @@ import {
   Vibration,
   View,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRootNavigationState, useRouter } from 'expo-router';
 
@@ -25,7 +25,7 @@ const NO_BUTTON_WIDTH = 112;
 const NO_BUTTON_HEIGHT = 44;
 const defaultKawaiiImg = require('../assets/illustrations/kawaii.png');
 const noImg = require('../assets/illustrations/No.png');
-const siImg = require('../assets/illustrations/Si.png');
+const siGif = require('../assets/illustrations/Si.gif');
 const NO_MESSAGES = [
   '¿Segura, mi chiqui?',
   'Piénsalo otra vez…',
@@ -223,7 +223,7 @@ export default function Question() {
   }, [yesScale]);
 
   const handleYes = useCallback(() => {
-    setMainImage(siImg);
+    setMainImage(siGif);
     setAccepted(true);
     if (hasResultRoute) {
       router.push('/result');
@@ -251,6 +251,19 @@ export default function Question() {
   }, [glowOpacity, handleYes]);
 
   const yesScaleCombined = useMemo(() => Animated.multiply(yesScale, pulseScale), [pulseScale, yesScale]);
+
+  const handleReset = useCallback(() => {
+    setShowYesMessage(false);
+    setNoMessageIndex(0);
+    setNoOpacity(1);
+    setNoScale(1);
+    setNoPos(getRandomNoPosition());
+    setNoCount(0);
+    setAccepted(false);
+    setMainImage(defaultKawaiiImg);
+    yesScaleValue.current = 1;
+    yesScale.setValue(1);
+  }, [yesScale]);
 
   return (
     <LinearGradient colors={['#f9c8d4', '#f7c2a3', '#f7efe3']} style={styles.gradient}>
@@ -296,7 +309,7 @@ export default function Question() {
         <View style={styles.card}>
           <Text style={styles.title}>¿Quieres ser mi San Valentín, mi Chiqui?</Text>
 
-          <Image source={mainImage} style={styles.illustration} resizeMode="contain" />
+          <ExpoImage source={mainImage} style={styles.illustration} contentFit="contain" />
 
           <Text style={styles.subMessage}>{NO_MESSAGES[noMessageIndex]}</Text>
 
@@ -328,6 +341,11 @@ export default function Question() {
           </View>
 
           {showYesMessage || accepted ? <Text style={styles.successMessage}>¡Siiii! 💖</Text> : null}
+          {accepted && !hasResultRoute ? (
+            <Pressable style={styles.resetButton} onPress={handleReset}>
+              <Text style={styles.resetButtonText}>Volver</Text>
+            </Pressable>
+          ) : null}
         </View>
       </SafeAreaView>
     </LinearGradient>
@@ -462,6 +480,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#b06d7d',
     fontSize: 18,
+    fontWeight: '600',
+  },
+  resetButton: {
+    marginTop: 12,
+    alignSelf: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 18,
+    backgroundColor: '#f5d8cc',
+    borderWidth: 1,
+    borderColor: '#efc1b1',
+  },
+  resetButtonText: {
+    color: '#5a2f3b',
+    fontSize: 15,
     fontWeight: '600',
   },
 });
