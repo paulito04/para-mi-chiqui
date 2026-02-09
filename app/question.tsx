@@ -30,7 +30,11 @@ type FloatingHeart = {
   top: number;
   size: number;
   translateY: Animated.Value;
+  translateX: Animated.Value;
   opacity: Animated.Value;
+  scale: Animated.Value;
+  floatDuration: number;
+  driftDistance: number;
 };
 
 export default function Question() {
@@ -41,15 +45,32 @@ export default function Question() {
   const glowOpacity = useRef(new Animated.Value(0)).current;
   const yesScaleValue = useRef(1);
   const hasPositionedNo = useRef(false);
-  const heartId = useRef(0);
-  const heartSpawnTimeout = useRef<NodeJS.Timeout | null>(null);
+  const heartAnimations = useRef<Animated.CompositeAnimation[]>([]);
   const [showYesMessage, setShowYesMessage] = useState(false);
   const [arenaSize, setArenaSize] = useState({ width: 0, height: 0 });
   const [noSize, setNoSize] = useState({ width: 0, height: 0 });
   const [noPosition, setNoPosition] = useState({ x: 0, y: 0 });
-  const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([]);
 
   const hasResultRoute = Boolean(rootState?.routeNames?.includes('result'));
+
+  const floatingHearts = useMemo<FloatingHeart[]>(() => {
+    const heartCount = 8;
+    return Array.from({ length: heartCount }, (_, index) => {
+      const size = 14 + Math.random() * 10;
+      return {
+        id: index,
+        left: Math.random() * (SCREEN_WIDTH - 80) + 20,
+        top: SCREEN_HEIGHT * (0.55 + Math.random() * 0.2),
+        size,
+        translateY: new Animated.Value(0),
+        translateX: new Animated.Value(0),
+        opacity: new Animated.Value(0),
+        scale: new Animated.Value(1),
+        floatDuration: 5000 + Math.random() * 3000,
+        driftDistance: 8 + Math.random() * 10,
+      };
+    });
+  }, []);
 
   const positionNoButton = useCallback(
     (x: number, y: number) => {
@@ -77,13 +98,13 @@ export default function Question() {
     const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseScale, {
-          toValue: 1.02,
-          duration: 1400,
+          toValue: 1.03,
+          duration: 1700,
           useNativeDriver: true,
         }),
         Animated.timing(pulseScale, {
           toValue: 1,
-          duration: 1400,
+          duration: 1700,
           useNativeDriver: true,
         }),
       ])
@@ -96,66 +117,80 @@ export default function Question() {
     };
   }, [pulseScale]);
 
-  const scheduleFloatingHearts = useCallback(() => {
-    const delay = 5000 + Math.random() * 3000;
-    heartSpawnTimeout.current = setTimeout(() => {
-      const heartCount = 1 + Math.floor(Math.random() * 2);
-      const newHearts: FloatingHeart[] = Array.from({ length: heartCount }, () => {
-        const id = heartId.current + 1;
-        heartId.current = id;
-        const size = 14 + Math.random() * 10;
-        const left = Math.random() * (SCREEN_WIDTH - 60) + 20;
-        const top = SCREEN_HEIGHT * (0.55 + Math.random() * 0.15);
-        return {
-          id,
-          left,
-          top,
-          size,
-          translateY: new Animated.Value(0),
-          opacity: new Animated.Value(0),
-        };
-      });
-
-      setFloatingHearts((prev) => [...prev, ...newHearts]);
-
-      newHearts.forEach((heart) => {
-        const duration = 5200 + Math.random() * 1200;
+  useEffect(() => {
+    heartAnimations.current = floatingHearts.map((heart) => {
+      const floatDistance = 160 + Math.random() * 60;
+      const halfDuration = heart.floatDuration / 2;
+      const animation = Animated.loop(
         Animated.parallel([
-          Animated.timing(heart.translateY, {
-            toValue: -180 - Math.random() * 60,
-            duration,
-            useNativeDriver: true,
-          }),
+          Animated.sequence([
+            Animated.timing(heart.translateY, {
+              toValue: -floatDistance,
+              duration: heart.floatDuration,
+              useNativeDriver: true,
+            }),
+            Animated.timing(heart.translateY, {
+              toValue: 0,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.sequence([
+            Animated.timing(heart.translateX, {
+              toValue: heart.driftDistance,
+              duration: halfDuration,
+              useNativeDriver: true,
+            }),
+            Animated.timing(heart.translateX, {
+              toValue: -heart.driftDistance,
+              duration: halfDuration,
+              useNativeDriver: true,
+            }),
+            Animated.timing(heart.translateX, {
+              toValue: 0,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
           Animated.sequence([
             Animated.timing(heart.opacity, {
-              toValue: 0.7,
-              duration: 500,
+              toValue: 0.18,
+              duration: halfDuration,
               useNativeDriver: true,
             }),
             Animated.timing(heart.opacity, {
               toValue: 0,
-              duration: duration - 500,
+              duration: halfDuration,
+              useNativeDriver: true,
+            }),
+            Animated.timing(heart.opacity, {
+              toValue: 0,
+              duration: 0,
               useNativeDriver: true,
             }),
           ]),
-        ]).start(() => {
-          setFloatingHearts((prev) => prev.filter((item) => item.id !== heart.id));
-        });
-      });
-
-      scheduleFloatingHearts();
-    }, delay);
-  }, []);
-
-  useEffect(() => {
-    scheduleFloatingHearts();
+          Animated.sequence([
+            Animated.timing(heart.scale, {
+              toValue: 1.02,
+              duration: halfDuration,
+              useNativeDriver: true,
+            }),
+            Animated.timing(heart.scale, {
+              toValue: 1,
+              duration: halfDuration,
+              useNativeDriver: true,
+            }),
+          ]),
+        ])
+      );
+      animation.start();
+      return animation;
+    });
 
     return () => {
-      if (heartSpawnTimeout.current) {
-        clearTimeout(heartSpawnTimeout.current);
-      }
+      heartAnimations.current.forEach((animation) => animation.stop());
     };
-  }, [scheduleFloatingHearts]);
+  }, [floatingHearts]);
 
   const handleNoAttempt = useCallback(() => {
     if (arenaSize.width === 0 || arenaSize.height === 0 || noSize.width === 0 || noSize.height === 0) {
@@ -234,7 +269,11 @@ export default function Question() {
                   top: heart.top,
                   fontSize: heart.size,
                   opacity: heart.opacity,
-                  transform: [{ translateY: heart.translateY }],
+                  transform: [
+                    { translateX: heart.translateX },
+                    { translateY: heart.translateY },
+                    { scale: heart.scale },
+                  ],
                 },
               ]}
             >
@@ -244,7 +283,7 @@ export default function Question() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.title}>¿Quieres ser mi San Valentín?</Text>
+          <Text style={styles.title}>¿Quieres ser mi San Valentín, mi Chiqui?</Text>
 
           <Image
             source={require('../assets/illustrations/kawaii.png')}
