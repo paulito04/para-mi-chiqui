@@ -1,5 +1,7 @@
-import { Animated, Image, Modal, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Animated, BackHandler, Image, Modal, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEventListener } from 'expo';
+import { useRouter } from 'expo-router';
 // If expo-video isn't installed yet, run: npx expo install expo-video
 import { VideoView, useVideoPlayer } from 'expo-video';
 
@@ -30,6 +32,8 @@ export default function Index() {
   const heartAnims = useRef(hearts.map(() => new Animated.Value(0))).current;
   const [snoopyFrameIndex, setSnoopyFrameIndex] = useState(0);
   const [isVideoVisible, setIsVideoVisible] = useState(false);
+  const hasHandledVideoEnd = useRef(false);
+  const router = useRouter();
   const player = useVideoPlayer(cartaAsset, (playerInstance) => {
     playerInstance.loop = false;
   });
@@ -85,14 +89,25 @@ export default function Index() {
     return () => clearInterval(intervalId);
   }, []);
 
-  const closeVideoModal = useCallback(() => {
+  const resetVideo = useCallback(() => {
     setIsVideoVisible(false);
     player.pause();
     player.currentTime = 0;
   }, [player]);
 
+  const handleVideoEnd = useCallback(() => {
+    if (hasHandledVideoEnd.current) {
+      return;
+    }
+
+    hasHandledVideoEnd.current = true;
+    resetVideo();
+    router.push('/question');
+  }, [resetVideo, router]);
+
   useEffect(() => {
     if (isVideoVisible) {
+      hasHandledVideoEnd.current = false;
       player.currentTime = 0;
       player.play();
       return;
@@ -102,19 +117,26 @@ export default function Index() {
     player.currentTime = 0;
   }, [isVideoVisible, player]);
 
+  useEventListener(player, 'timeUpdate', (event: { currentTime?: number }) => {
+    if (!isVideoVisible || hasHandledVideoEnd.current) {
+      return;
+    }
+
+    const duration = player.duration;
+    const currentTime = event?.currentTime ?? player.currentTime;
+    if (duration > 0 && currentTime >= duration) {
+      handleVideoEnd();
+    }
+  });
+
   useEffect(() => {
     if (!isVideoVisible) {
       return;
     }
 
-    const intervalId = setInterval(() => {
-      if (player.duration > 0 && player.currentTime >= player.duration) {
-        closeVideoModal();
-      }
-    }, 250);
-
-    return () => clearInterval(intervalId);
-  }, [closeVideoModal, isVideoVisible, player]);
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => subscription.remove();
+  }, [isVideoVisible]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -195,13 +217,10 @@ export default function Index() {
         visible={isVideoVisible}
         animationType="fade"
         presentationStyle="fullScreen"
-        onRequestClose={closeVideoModal}
+        onRequestClose={() => {}}
       >
         <View style={styles.videoModalContainer}>
           <VideoView player={player} style={styles.video} contentFit="contain" />
-          <Pressable style={styles.closeButton} onPress={closeVideoModal}>
-            <Text style={styles.closeButtonText}>Cerrar</Text>
-          </Pressable>
         </View>
       </Modal>
     </SafeAreaView>
@@ -347,20 +366,5 @@ const styles = StyleSheet.create({
   video: {
     width: '100%',
     height: '100%',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 52,
-    right: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-  },
-  closeButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.2,
   },
 });
