@@ -1,19 +1,53 @@
-import { Animated, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { useCallback, useEffect, useRef, useState } from 'react';
+// npx expo install expo-linear-gradient
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  Image,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  Vibration,
+  View,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRootNavigationState, useRouter } from 'expo-router';
 
 const MAX_YES_SCALE = 1.35;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const PATTERN_ITEMS = Array.from({ length: 18 }, (_, index) => ({
+  id: index,
+  left: Math.random() * (SCREEN_WIDTH - 40) + 8,
+  top: Math.random() * (SCREEN_HEIGHT * 0.7) + 12,
+  size: 10 + Math.random() * 8,
+}));
+
+type FloatingHeart = {
+  id: number;
+  left: number;
+  top: number;
+  size: number;
+  translateY: Animated.Value;
+  opacity: Animated.Value;
+};
 
 export default function Question() {
   const router = useRouter();
   const rootState = useRootNavigationState();
   const yesScale = useRef(new Animated.Value(1)).current;
+  const pulseScale = useRef(new Animated.Value(1)).current;
+  const glowOpacity = useRef(new Animated.Value(0)).current;
   const yesScaleValue = useRef(1);
   const hasPositionedNo = useRef(false);
+  const heartId = useRef(0);
+  const heartSpawnTimeout = useRef<NodeJS.Timeout | null>(null);
   const [showYesMessage, setShowYesMessage] = useState(false);
   const [arenaSize, setArenaSize] = useState({ width: 0, height: 0 });
   const [noSize, setNoSize] = useState({ width: 0, height: 0 });
   const [noPosition, setNoPosition] = useState({ x: 0, y: 0 });
+  const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([]);
 
   const hasResultRoute = Boolean(rootState?.routeNames?.includes('result'));
 
@@ -38,6 +72,90 @@ export default function Question() {
     positionNoButton(centerX, centerY);
     hasPositionedNo.current = true;
   }, [arenaSize, noSize, positionNoButton]);
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseScale, {
+          toValue: 1.02,
+          duration: 1400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseScale, {
+          toValue: 1,
+          duration: 1400,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    pulse.start();
+
+    return () => {
+      pulse.stop();
+    };
+  }, [pulseScale]);
+
+  const scheduleFloatingHearts = useCallback(() => {
+    const delay = 5000 + Math.random() * 3000;
+    heartSpawnTimeout.current = setTimeout(() => {
+      const heartCount = 1 + Math.floor(Math.random() * 2);
+      const newHearts: FloatingHeart[] = Array.from({ length: heartCount }, () => {
+        const id = heartId.current + 1;
+        heartId.current = id;
+        const size = 14 + Math.random() * 10;
+        const left = Math.random() * (SCREEN_WIDTH - 60) + 20;
+        const top = SCREEN_HEIGHT * (0.55 + Math.random() * 0.15);
+        return {
+          id,
+          left,
+          top,
+          size,
+          translateY: new Animated.Value(0),
+          opacity: new Animated.Value(0),
+        };
+      });
+
+      setFloatingHearts((prev) => [...prev, ...newHearts]);
+
+      newHearts.forEach((heart) => {
+        const duration = 5200 + Math.random() * 1200;
+        Animated.parallel([
+          Animated.timing(heart.translateY, {
+            toValue: -180 - Math.random() * 60,
+            duration,
+            useNativeDriver: true,
+          }),
+          Animated.sequence([
+            Animated.timing(heart.opacity, {
+              toValue: 0.7,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+            Animated.timing(heart.opacity, {
+              toValue: 0,
+              duration: duration - 500,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]).start(() => {
+          setFloatingHearts((prev) => prev.filter((item) => item.id !== heart.id));
+        });
+      });
+
+      scheduleFloatingHearts();
+    }, delay);
+  }, []);
+
+  useEffect(() => {
+    scheduleFloatingHearts();
+
+    return () => {
+      if (heartSpawnTimeout.current) {
+        clearTimeout(heartSpawnTimeout.current);
+      }
+    };
+  }, [scheduleFloatingHearts]);
 
   const handleNoAttempt = useCallback(() => {
     if (arenaSize.width === 0 || arenaSize.height === 0 || noSize.width === 0 || noSize.height === 0) {
@@ -69,114 +187,176 @@ export default function Question() {
     setShowYesMessage(true);
   }, [hasResultRoute, router]);
 
+  const handleYesPress = useCallback(() => {
+    Vibration.vibrate(15);
+    Animated.sequence([
+      Animated.timing(glowOpacity, {
+        toValue: 1,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+      Animated.timing(glowOpacity, {
+        toValue: 0,
+        duration: 260,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    handleYes();
+  }, [glowOpacity, handleYes]);
+
+  const yesScaleCombined = useMemo(() => Animated.multiply(yesScale, pulseScale), [pulseScale, yesScale]);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.backgroundGlowTop} pointerEvents="none" />
-      <View style={styles.backgroundGlowBottom} pointerEvents="none" />
-      <View style={styles.paperTexture} pointerEvents="none" />
-
-      <View style={styles.card}>
-        <Text style={styles.title}>¿Quieres ser mi San Valentín?</Text>
-
-        <View
-          style={styles.buttonArena}
-          onLayout={(event) => {
-            const { width, height } = event.nativeEvent.layout;
-            setArenaSize({ width, height });
-          }}
-        >
-          <Animated.View style={[styles.yesButtonWrapper, { transform: [{ scale: yesScale }] }]}>
-            <Pressable style={({ pressed }) => [styles.button, styles.yesButton, pressed && styles.buttonPressed]} onPress={handleYes}>
-              <Text style={styles.buttonText}>Sí</Text>
-            </Pressable>
-          </Animated.View>
-
-          <Pressable
-            style={[
-              styles.button,
-              styles.noButton,
-              {
-                transform: [{ translateX: noPosition.x }, { translateY: noPosition.y }],
-              },
-            ]}
-            onLayout={(event) => {
-              const { width, height } = event.nativeEvent.layout;
-              setNoSize({ width, height });
-            }}
-            onPressIn={handleNoAttempt}
-          >
-            <Text style={styles.buttonText}>No</Text>
-          </Pressable>
+    <LinearGradient colors={['#f9c8d4', '#f7c2a3', '#f7efe3']} style={styles.gradient}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.patternLayer} pointerEvents="none">
+          {PATTERN_ITEMS.map((item) => (
+            <Text
+              key={`pattern-${item.id}`}
+              style={[
+                styles.patternHeart,
+                { left: item.left, top: item.top, fontSize: item.size },
+              ]}
+            >
+              ♥
+            </Text>
+          ))}
         </View>
 
-        {showYesMessage ? <Text style={styles.successMessage}>¡Siiii! 💖</Text> : null}
-      </View>
-    </SafeAreaView>
+        <View style={styles.floatingHearts} pointerEvents="none">
+          {floatingHearts.map((heart) => (
+            <Animated.Text
+              key={`heart-${heart.id}`}
+              style={[
+                styles.floatingHeart,
+                {
+                  left: heart.left,
+                  top: heart.top,
+                  fontSize: heart.size,
+                  opacity: heart.opacity,
+                  transform: [{ translateY: heart.translateY }],
+                },
+              ]}
+            >
+              ♥
+            </Animated.Text>
+          ))}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.title}>¿Quieres ser mi San Valentín?</Text>
+
+          <Image
+            source={require('../assets/illustrations/kawaii.png')}
+            style={styles.illustration}
+            resizeMode="contain"
+          />
+
+          <View
+            style={styles.buttonArena}
+            onLayout={(event) => {
+              const { width, height } = event.nativeEvent.layout;
+              setArenaSize({ width, height });
+            }}
+          >
+            <Animated.View style={[styles.yesButtonWrapper, { transform: [{ scale: yesScaleCombined }] }]}>
+              <Pressable style={styles.yesButton} onPress={handleYesPress}>
+                <LinearGradient
+                  colors={['#f8a5c2', '#f47c7c']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.yesButtonGradient}
+                >
+                  <View style={styles.yesButtonShine} pointerEvents="none" />
+                  <Animated.View style={[styles.yesButtonGlow, { opacity: glowOpacity }]} pointerEvents="none" />
+                  <Text style={styles.buttonText}>Sí</Text>
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
+
+            <Pressable
+              style={[
+                styles.noButton,
+                {
+                  transform: [{ translateX: noPosition.x }, { translateY: noPosition.y }],
+                },
+              ]}
+              onLayout={(event) => {
+                const { width, height } = event.nativeEvent.layout;
+                setNoSize({ width, height });
+              }}
+              onPressIn={handleNoAttempt}
+            >
+              <Text style={styles.buttonText}>No</Text>
+            </Pressable>
+          </View>
+
+          {showYesMessage ? <Text style={styles.successMessage}>¡Siiii! 💖</Text> : null}
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f7eee6',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
-  backgroundGlowTop: {
-    position: 'absolute',
-    top: -140,
-    left: -80,
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: '#f7d9c7',
-    opacity: 0.55,
-  },
-  backgroundGlowBottom: {
-    position: 'absolute',
-    bottom: -180,
-    right: -80,
-    width: 360,
-    height: 360,
-    borderRadius: 180,
-    backgroundColor: '#f2c7b5',
-    opacity: 0.45,
-  },
-  paperTexture: {
+  patternLayer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#f9f1ea',
-    opacity: 0.4,
+    opacity: 0.08,
+  },
+  patternHeart: {
+    position: 'absolute',
+    color: '#ffffff',
+  },
+  floatingHearts: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  floatingHeart: {
+    position: 'absolute',
+    color: '#f8a5c2',
   },
   card: {
     width: '100%',
     maxWidth: 380,
-    borderRadius: 24,
-    backgroundColor: '#fff7f0',
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.78)',
     paddingVertical: 28,
     paddingHorizontal: 22,
-    shadowColor: '#3c1e1a',
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8,
+    shadowColor: '#8a4f55',
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 10,
     borderWidth: 1,
-    borderColor: '#e2c7b8',
+    borderColor: 'rgba(255, 255, 255, 0.6)',
   },
   title: {
     textAlign: 'center',
-    color: '#4a2e2d',
+    color: '#5a2f3b',
     fontSize: 20,
     fontWeight: '600',
-    marginBottom: 20,
+    marginBottom: 16,
+  },
+  illustration: {
+    width: '100%',
+    height: 140,
+    marginBottom: 12,
   },
   buttonArena: {
     width: '100%',
     height: 220,
     borderRadius: 20,
-    backgroundColor: '#fffaf6',
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderWidth: 1,
-    borderColor: '#ecd5c8',
+    borderColor: 'rgba(247, 199, 199, 0.7)',
     padding: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -185,32 +365,51 @@ const styles = StyleSheet.create({
   yesButtonWrapper: {
     zIndex: 2,
   },
-  button: {
-    backgroundColor: '#f4c7b4',
-    paddingHorizontal: 26,
-    paddingVertical: 12,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#d9a998',
-    shadowColor: '#b26f6a',
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
   yesButton: {
-    backgroundColor: '#f6c7c8',
+    borderRadius: 20,
+    shadowColor: '#f39cab',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  yesButtonGradient: {
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 20,
+    overflow: 'hidden',
+    alignItems: 'center',
+  },
+  yesButtonShine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '45%',
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  yesButtonGlow: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
   },
   noButton: {
     position: 'absolute',
     left: 0,
     top: 0,
-  },
-  buttonPressed: {
-    opacity: 0.82,
+    backgroundColor: '#f5d8cc',
+    paddingHorizontal: 26,
+    paddingVertical: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#efc1b1',
+    shadowColor: '#c08a7a',
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   buttonText: {
-    color: '#5a2f2d',
+    color: '#5a2f3b',
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 0.2,
@@ -218,7 +417,7 @@ const styles = StyleSheet.create({
   successMessage: {
     marginTop: 18,
     textAlign: 'center',
-    color: '#b06d6d',
+    color: '#b06d7d',
     fontSize: 18,
     fontWeight: '600',
   },
