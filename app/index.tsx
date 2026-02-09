@@ -129,6 +129,14 @@ export default function Index() {
     }
   });
 
+  useEventListener(player, 'playToEnd', () => {
+    if (!isVideoVisible || hasHandledVideoEnd.current) {
+      return;
+    }
+
+    handleVideoEnd();
+  });
+
   useEffect(() => {
     if (!isVideoVisible) {
       return;
