@@ -13,6 +13,7 @@ import {
 import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRootNavigationState, useRouter } from 'expo-router';
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 const MAX_YES_SCALE = 2.2;
 const YES_SCALE_STEP = 0.08;
@@ -71,6 +72,7 @@ export default function Question() {
   const yesScale = useRef(new Animated.Value(1)).current;
   const pulseScale = useRef(new Animated.Value(1)).current;
   const glowOpacity = useRef(new Animated.Value(0)).current;
+  const celebrationAnim = useRef(new Animated.Value(0)).current;
   const yesScaleValue = useRef(1);
   const heartAnimations = useRef<Animated.CompositeAnimation[]>([]);
   const [showYesMessage, setShowYesMessage] = useState(false);
@@ -80,6 +82,7 @@ export default function Question() {
   const [noPos, setNoPos] = useState(() => getRandomNoPosition());
   const [noCount, setNoCount] = useState(0);
   const [accepted, setAccepted] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
   const [mainImage, setMainImage] = useState(defaultKawaiiImg);
 
   const hasResultRoute = Boolean(rootState?.routeNames?.includes('result'));
@@ -125,6 +128,18 @@ export default function Question() {
       pulse.stop();
     };
   }, [pulseScale]);
+
+  useEffect(() => {
+    if (!celebrate) {
+      return;
+    }
+
+    Animated.timing(celebrationAnim, {
+      toValue: 1,
+      duration: 900,
+      useNativeDriver: false,
+    }).start();
+  }, [celebrate, celebrationAnim]);
 
   useEffect(() => {
     heartAnimations.current = floatingHearts.map((heart) => {
@@ -223,6 +238,7 @@ export default function Question() {
   }, [yesScale]);
 
   const handleYes = useCallback(() => {
+    setCelebrate(true);
     setMainImage(siGif);
     setAccepted(true);
     if (hasResultRoute) {
@@ -251,10 +267,28 @@ export default function Question() {
   }, [glowOpacity, handleYes]);
 
   const yesScaleCombined = useMemo(() => Animated.multiply(yesScale, pulseScale), [pulseScale, yesScale]);
+  const celebrationOverlayColor = celebrationAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(255, 224, 242, 0)', 'rgba(255, 224, 242, 0.45)'],
+  });
+  const cardBackgroundColor = celebrationAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(255, 255, 255, 0.78)', 'rgba(255, 238, 251, 0.9)'],
+  });
 
   return (
-    <LinearGradient colors={['#f9c8d4', '#f7c2a3', '#f7efe3']} style={styles.gradient}>
+    <View style={styles.gradient}>
+      <LinearGradient colors={['#f9c8d4', '#f7c2a3', '#f7efe3']} style={StyleSheet.absoluteFillObject} />
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.celebrationOverlay, { backgroundColor: celebrationOverlayColor }]}
+      />
       <SafeAreaView style={styles.container}>
+        {celebrate ? (
+          <View style={styles.confettiLayer} pointerEvents="none">
+            <ConfettiCannon count={140} origin={{ x: SCREEN_WIDTH / 2, y: 0 }} fadeOut />
+          </View>
+        ) : null}
         <View style={styles.patternLayer} pointerEvents="none">
           {PATTERN_ITEMS.map((item) => (
             <Text
@@ -293,7 +327,7 @@ export default function Question() {
           ))}
         </View>
 
-        <View style={styles.card}>
+        <Animated.View style={[styles.card, { backgroundColor: cardBackgroundColor }]}>
           <Text style={styles.title}>¿Quieres ser mi San Valentín, mi Chiqui?</Text>
 
           <ExpoImage source={mainImage} style={styles.illustration} contentFit="contain" />
@@ -333,9 +367,9 @@ export default function Question() {
               <Text style={styles.resetButtonText}>Volver</Text>
             </Pressable>
           ) : null}
-        </View>
+        </Animated.View>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -352,6 +386,13 @@ const styles = StyleSheet.create({
   patternLayer: {
     ...StyleSheet.absoluteFillObject,
     opacity: 0.08,
+  },
+  celebrationOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  confettiLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 5,
   },
   patternHeart: {
     position: 'absolute',
