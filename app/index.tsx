@@ -132,12 +132,18 @@ export default function Index() {
 
       <Animated.View style={[styles.buttonWrapper, { transform: [{ scale: pulseAnim }] }]}>
         <View style={styles.actionRow}>
+          <Image
+            source={snoopyFrames[snoopyFrameIndex]}
+            style={styles.snoopy}
+            pointerEvents="none"
+            resizeMode="contain"
+          />
           <Pressable style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]} onPress={() => console.log('ABRIR')}>
             <Text style={styles.buttonText}>Abrir 💌</Text>
           </Pressable>
           <Image
             source={snoopyFrames[snoopyFrameIndex]}
-            style={styles.snoopy}
+            style={[styles.snoopy, styles.snoopyFlipped]}
             pointerEvents="none"
             resizeMode="contain"
           />
@@ -248,6 +254,9 @@ const styles = StyleSheet.create({
   snoopy: {
     width: 64,
     height: 64,
+  },
+  snoopyFlipped: {
+    transform: [{ scaleX: -1 }],
   },
   buttonWrapper: {
     marginTop: 24,
