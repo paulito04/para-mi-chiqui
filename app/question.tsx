@@ -252,19 +252,6 @@ export default function Question() {
 
   const yesScaleCombined = useMemo(() => Animated.multiply(yesScale, pulseScale), [pulseScale, yesScale]);
 
-  const handleReset = useCallback(() => {
-    setShowYesMessage(false);
-    setNoMessageIndex(0);
-    setNoOpacity(1);
-    setNoScale(1);
-    setNoPos(getRandomNoPosition());
-    setNoCount(0);
-    setAccepted(false);
-    setMainImage(defaultKawaiiImg);
-    yesScaleValue.current = 1;
-    yesScale.setValue(1);
-  }, [yesScale]);
-
   return (
     <LinearGradient colors={['#f9c8d4', '#f7c2a3', '#f7efe3']} style={styles.gradient}>
       <SafeAreaView style={styles.container}>
@@ -342,7 +329,7 @@ export default function Question() {
 
           {showYesMessage || accepted ? <Text style={styles.successMessage}>¡Siiii! 💖</Text> : null}
           {accepted && !hasResultRoute ? (
-            <Pressable style={styles.resetButton} onPress={handleReset}>
+            <Pressable style={styles.resetButton} onPress={() => router.replace('/')}>
               <Text style={styles.resetButtonText}>Volver</Text>
             </Pressable>
           ) : null}
