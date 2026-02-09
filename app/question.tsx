@@ -1,4 +1,5 @@
 // npx expo install expo-linear-gradient
+// npx expo install expo-av
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -11,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
+import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRootNavigationState, useRouter } from 'expo-router';
 
@@ -33,6 +35,11 @@ const NO_MESSAGES = [
   'Última oportunidad 🙈',
   'Ok… pero mira el botón ‘Sí’ 👀',
   'Dale, di que sí 💖',
+];
+const SI_AUDIOS = [
+  require('../assets/audio/si-1.m4a'),
+  require('../assets/audio/si-2.m4a'),
+  require('../assets/audio/si-3.m4a'),
 ];
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -73,6 +80,7 @@ export default function Question() {
   const glowOpacity = useRef(new Animated.Value(0)).current;
   const yesScaleValue = useRef(1);
   const heartAnimations = useRef<Animated.CompositeAnimation[]>([]);
+  const soundRef = useRef<Audio.Sound | null>(null);
   const [showYesMessage, setShowYesMessage] = useState(false);
   const [noMessageIndex, setNoMessageIndex] = useState(0);
   const [noOpacity, setNoOpacity] = useState(1);
@@ -125,6 +133,15 @@ export default function Question() {
       pulse.stop();
     };
   }, [pulseScale]);
+
+  useEffect(() => {
+    return () => {
+      if (soundRef.current) {
+        void soundRef.current.unloadAsync();
+        soundRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     heartAnimations.current = floatingHearts.map((heart) => {
@@ -233,8 +250,22 @@ export default function Question() {
     setShowYesMessage(true);
   }, [hasResultRoute, router]);
 
-  const handleYesPress = useCallback(() => {
+  const playRandomYesAudio = useCallback(async () => {
+    if (soundRef.current) {
+      await soundRef.current.stopAsync();
+      await soundRef.current.unloadAsync();
+      soundRef.current = null;
+    }
+
+    const pick = SI_AUDIOS[Math.floor(Math.random() * SI_AUDIOS.length)];
+    await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+    const { sound } = await Audio.Sound.createAsync(pick, { shouldPlay: true });
+    soundRef.current = sound;
+  }, []);
+
+  const handleYesPress = useCallback(async () => {
     Vibration.vibrate(15);
+    await playRandomYesAudio();
     Animated.sequence([
       Animated.timing(glowOpacity, {
         toValue: 1,
@@ -248,7 +279,7 @@ export default function Question() {
       }),
     ]).start();
     handleYes();
-  }, [glowOpacity, handleYes]);
+  }, [glowOpacity, handleYes, playRandomYesAudio]);
 
   const yesScaleCombined = useMemo(() => Animated.multiply(yesScale, pulseScale), [pulseScale, yesScale]);
 
