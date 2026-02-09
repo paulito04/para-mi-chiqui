@@ -83,12 +83,6 @@ export default function Index() {
       <View style={styles.backgroundGlowTop} pointerEvents="none" />
       <View style={styles.backgroundGlowBottom} pointerEvents="none" />
       <View style={styles.paperTexture} pointerEvents="none" />
-      <Image
-        source={snoopyFrames[snoopyFrameIndex]}
-        style={styles.snoopy}
-        pointerEvents="none"
-        resizeMode="contain"
-      />
       <View style={styles.heartsLayer} pointerEvents="none">
         {hearts.map((heart, index) => (
           <Animated.Text
@@ -137,9 +131,17 @@ export default function Index() {
       </View>
 
       <Animated.View style={[styles.buttonWrapper, { transform: [{ scale: pulseAnim }] }]}>
-        <Pressable style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]} onPress={() => console.log('ABRIR')}>
-          <Text style={styles.buttonText}>Abrir 💌</Text>
-        </Pressable>
+        <View style={styles.actionRow}>
+          <Pressable style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]} onPress={() => console.log('ABRIR')}>
+            <Text style={styles.buttonText}>Abrir 💌</Text>
+          </Pressable>
+          <Image
+            source={snoopyFrames[snoopyFrameIndex]}
+            style={styles.snoopy}
+            pointerEvents="none"
+            resizeMode="contain"
+          />
+        </View>
       </Animated.View>
     </SafeAreaView>
   );
@@ -237,10 +239,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 22,
   },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
   snoopy: {
-    position: 'absolute',
-    top: 110,
-    right: 24,
     width: 64,
     height: 64,
   },
