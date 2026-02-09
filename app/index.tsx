@@ -1,22 +1,71 @@
-import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
 
 const letterImage = require('../assets/letter.png');
 
 const hearts = [
-  { id: 1, size: 22, top: 90, left: 34, opacity: 0.35 },
-  { id: 2, size: 26, top: 150, right: 36, opacity: 0.38 },
-  { id: 3, size: 20, top: 240, left: 110, opacity: 0.3 },
-  { id: 4, size: 30, top: 330, right: 70, opacity: 0.28 },
-  { id: 5, size: 24, top: 520, left: 46, opacity: 0.32 },
-  { id: 6, size: 28, top: 610, right: 32, opacity: 0.3 },
+  { id: 1, size: 18, top: 70, left: 26, opacity: 0.18, drift: 8, duration: 6200, delay: 0 },
+  { id: 2, size: 22, top: 150, right: 40, opacity: 0.2, drift: 10, duration: 6800, delay: 400 },
+  { id: 3, size: 16, top: 250, left: 120, opacity: 0.16, drift: 6, duration: 5400, delay: 800 },
+  { id: 4, size: 24, top: 330, right: 70, opacity: 0.18, drift: 12, duration: 7200, delay: 1200 },
+  { id: 5, size: 18, top: 520, left: 50, opacity: 0.17, drift: 9, duration: 6400, delay: 600 },
+  { id: 6, size: 20, top: 610, right: 32, opacity: 0.18, drift: 7, duration: 6000, delay: 1000 },
 ];
 
 export default function Index() {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const heartAnims = useRef(hearts.map(() => new Animated.Value(0))).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.04,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    const heartLoops = hearts.map((heart, index) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(heartAnims[index], {
+            toValue: 1,
+            duration: heart.duration,
+            delay: heart.delay,
+            useNativeDriver: true,
+          }),
+          Animated.timing(heartAnims[index], {
+            toValue: 0,
+            duration: heart.duration,
+            useNativeDriver: true,
+          }),
+        ])
+      )
+    );
+
+    heartLoops.forEach((loop) => loop.start());
+
+    return () => {
+      heartLoops.forEach((loop) => loop.stop());
+      pulseAnim.stopAnimation();
+    };
+  }, [heartAnims, pulseAnim]);
+
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.backgroundGlowTop} pointerEvents="none" />
+      <View style={styles.backgroundGlowBottom} pointerEvents="none" />
+      <View style={styles.paperTexture} pointerEvents="none" />
       <View style={styles.heartsLayer} pointerEvents="none">
-        {hearts.map((heart) => (
-          <Text
+        {hearts.map((heart, index) => (
+          <Animated.Text
             key={heart.id}
             style={[
               styles.heart,
@@ -26,34 +75,46 @@ export default function Index() {
                 left: heart.left,
                 right: heart.right,
                 opacity: heart.opacity,
+                transform: [
+                  {
+                    translateY: heartAnims[index].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, -heart.drift],
+                    }),
+                  },
+                  {
+                    translateX: heartAnims[index].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, heart.drift],
+                    }),
+                  },
+                ],
               },
             ]}
           >
             ♥
-          </Text>
+          </Animated.Text>
         ))}
       </View>
 
       <Text style={styles.title}>
-        <Text style={styles.titleAccent}>Valentine </Text>
-        <Text style={styles.titleMain}>Letter</Text>
+        <Text style={styles.titleAccent}>Carta</Text>
+        <Text style={styles.titleMain}> para ti</Text>
       </Text>
 
-      <View style={styles.window}>
-        <View style={styles.windowHeader}>
-          <View style={[styles.windowDot, styles.windowDotRed]} />
-          <View style={[styles.windowDot, styles.windowDotYellow]} />
-          <View style={[styles.windowDot, styles.windowDotGreen]} />
-        </View>
-        <View style={styles.windowBody}>
+      <View style={styles.envelope}>
+        <View style={styles.envelopeGlow} />
+        <View style={styles.envelopeBody}>
           <Image source={letterImage} style={styles.letterImage} resizeMode="contain" />
           <Text style={styles.subtitle}>Una cartita retro para mi chiqui favorita.</Text>
         </View>
       </View>
 
-      <Pressable style={styles.button} onPress={() => console.log('ABRIR')}>
-        <Text style={styles.buttonText}>Abrir 💌</Text>
-      </Pressable>
+      <Animated.View style={[styles.buttonWrapper, { transform: [{ scale: pulseAnim }] }]}>
+        <Pressable style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]} onPress={() => console.log('ABRIR')}>
+          <Text style={styles.buttonText}>Abrir 💌</Text>
+        </Pressable>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -61,102 +122,118 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#12363a',
+    backgroundColor: '#f7eee6',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingTop: 34,
+    justifyContent: 'center',
   },
   heartsLayer: {
     ...StyleSheet.absoluteFillObject,
   },
   heart: {
     position: 'absolute',
-    color: '#5a3b59',
+    color: '#b4798c',
+  },
+  backgroundGlowTop: {
+    position: 'absolute',
+    top: -120,
+    left: -60,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: '#f7d9c7',
+    opacity: 0.6,
+  },
+  backgroundGlowBottom: {
+    position: 'absolute',
+    bottom: -160,
+    right: -80,
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    backgroundColor: '#f2c7b5',
+    opacity: 0.45,
+  },
+  paperTexture: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#f9f1ea',
+    opacity: 0.4,
   },
   title: {
-    fontSize: 34,
-    fontWeight: '700',
-    marginBottom: 24,
+    fontSize: 32,
+    fontWeight: '600',
+    marginBottom: 26,
     textAlign: 'center',
   },
   titleAccent: {
-    color: '#95e6a8',
+    color: '#b06d6d',
   },
   titleMain: {
-    color: '#ffffff',
+    color: '#4a2e2d',
   },
-  window: {
+  envelope: {
     width: '100%',
+    borderRadius: 22,
+    backgroundColor: '#fff7f0',
+    shadowColor: '#3c1e1a',
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
+    padding: 3,
+  },
+  envelopeGlow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 22,
+    backgroundColor: '#ffe8dc',
+    opacity: 0.7,
+  },
+  envelopeBody: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    gap: 18,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e2c7b8',
+    backgroundColor: '#fffaf6',
+  },
+  letterImage: {
+    width: '100%',
+    height: 170,
+  },
+  subtitle: {
+    color: '#6a4540',
+    fontSize: 16,
+    textAlign: 'center',
+    fontWeight: '500',
+    lineHeight: 22,
+  },
+  buttonWrapper: {
+    marginTop: 24,
+  },
+  button: {
+    backgroundColor: '#f4c7b4',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
     borderRadius: 18,
-    borderWidth: 2,
-    borderColor: '#2a1c1b',
-    backgroundColor: '#f3e4dc',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
+    borderWidth: 1,
+    borderColor: '#d9a998',
+    shadowColor: '#b26f6a',
+    shadowOpacity: 0.35,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
   },
-  windowHeader: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#f1cfc6',
-    borderBottomWidth: 2,
-    borderBottomColor: '#2a1c1b',
-  },
-  windowDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#2a1c1b',
-  },
-  windowDotRed: {
-    backgroundColor: '#f37a76',
-  },
-  windowDotYellow: {
-    backgroundColor: '#f6d365',
-  },
-  windowDotGreen: {
-    backgroundColor: '#78d391',
-  },
-  windowBody: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 26,
-    gap: 16,
-  },
-  letterImage: {
-    width: '100%',
-    height: 190,
-  },
-  subtitle: {
-    color: '#2c1d1c',
-    fontSize: 16,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  button: {
-    backgroundColor: '#f2c355',
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    borderRadius: 14,
-    marginTop: 18,
-    borderWidth: 2,
-    borderColor: '#2a1c1b',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
+  buttonPressed: {
+    opacity: 0.85,
   },
   buttonText: {
-    color: '#2a1c1b',
-    fontSize: 16,
-    fontWeight: '700',
+    color: '#5a2f2d',
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
 });
