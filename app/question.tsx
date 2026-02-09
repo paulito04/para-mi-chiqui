@@ -14,7 +14,17 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRootNavigationState, useRouter } from 'expo-router';
 
-const MAX_YES_SCALE = 1.35;
+const MAX_YES_SCALE = 1.8;
+const YES_SCALE_STEP = 0.08;
+const NO_MIN_OPACITY = 0.6;
+const NO_MESSAGES = [
+  '¿Segura, mi chiqui?',
+  'Piénsalo otra vez…',
+  'No acepto ese ‘no’ 😌',
+  'Última oportunidad 🙈',
+  'Ok… pero mira el botón ‘Sí’ 👀',
+  'Dale, di que sí 💖',
+];
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const PATTERN_ITEMS = Array.from({ length: 18 }, (_, index) => ({
@@ -44,12 +54,10 @@ export default function Question() {
   const pulseScale = useRef(new Animated.Value(1)).current;
   const glowOpacity = useRef(new Animated.Value(0)).current;
   const yesScaleValue = useRef(1);
-  const hasPositionedNo = useRef(false);
   const heartAnimations = useRef<Animated.CompositeAnimation[]>([]);
   const [showYesMessage, setShowYesMessage] = useState(false);
-  const [arenaSize, setArenaSize] = useState({ width: 0, height: 0 });
-  const [noSize, setNoSize] = useState({ width: 0, height: 0 });
-  const [noPosition, setNoPosition] = useState({ x: 0, y: 0 });
+  const [noMessageIndex, setNoMessageIndex] = useState(0);
+  const [noOpacity, setNoOpacity] = useState(1);
 
   const hasResultRoute = Boolean(rootState?.routeNames?.includes('result'));
 
@@ -71,28 +79,6 @@ export default function Question() {
       };
     });
   }, []);
-
-  const positionNoButton = useCallback(
-    (x: number, y: number) => {
-      setNoPosition({ x, y });
-    },
-    [setNoPosition]
-  );
-
-  useEffect(() => {
-    if (hasPositionedNo.current || arenaSize.width === 0 || arenaSize.height === 0) {
-      return;
-    }
-
-    if (noSize.width === 0 || noSize.height === 0) {
-      return;
-    }
-
-    const centerX = Math.max(0, (arenaSize.width - noSize.width) / 2);
-    const centerY = Math.max(0, (arenaSize.height - noSize.height) / 2);
-    positionNoButton(centerX, centerY);
-    hasPositionedNo.current = true;
-  }, [arenaSize, noSize, positionNoButton]);
 
   useEffect(() => {
     const pulse = Animated.loop(
@@ -193,17 +179,10 @@ export default function Question() {
   }, [floatingHearts]);
 
   const handleNoAttempt = useCallback(() => {
-    if (arenaSize.width === 0 || arenaSize.height === 0 || noSize.width === 0 || noSize.height === 0) {
-      return;
-    }
+    setNoMessageIndex((prev) => (prev + 1) % NO_MESSAGES.length);
+    setNoOpacity((prev) => Math.max(NO_MIN_OPACITY, prev - 0.06));
 
-    const maxX = Math.max(0, arenaSize.width - noSize.width);
-    const maxY = Math.max(0, arenaSize.height - noSize.height);
-    const nextX = Math.random() * maxX;
-    const nextY = Math.random() * maxY;
-    positionNoButton(nextX, nextY);
-
-    const nextScale = Math.min(MAX_YES_SCALE, yesScaleValue.current + 0.06);
+    const nextScale = Math.min(MAX_YES_SCALE, yesScaleValue.current + YES_SCALE_STEP);
     yesScaleValue.current = nextScale;
     Animated.spring(yesScale, {
       toValue: nextScale,
@@ -211,7 +190,7 @@ export default function Question() {
       friction: 6,
       tension: 120,
     }).start();
-  }, [arenaSize, noSize, positionNoButton, yesScale]);
+  }, [yesScale]);
 
   const handleYes = useCallback(() => {
     if (hasResultRoute) {
@@ -291,13 +270,9 @@ export default function Question() {
             resizeMode="contain"
           />
 
-          <View
-            style={styles.buttonArena}
-            onLayout={(event) => {
-              const { width, height } = event.nativeEvent.layout;
-              setArenaSize({ width, height });
-            }}
-          >
+          <Text style={styles.subMessage}>{NO_MESSAGES[noMessageIndex]}</Text>
+
+          <View style={styles.buttonArena}>
             <Animated.View style={[styles.yesButtonWrapper, { transform: [{ scale: yesScaleCombined }] }]}>
               <Pressable style={styles.yesButton} onPress={handleYesPress}>
                 <LinearGradient
@@ -313,19 +288,7 @@ export default function Question() {
               </Pressable>
             </Animated.View>
 
-            <Pressable
-              style={[
-                styles.noButton,
-                {
-                  transform: [{ translateX: noPosition.x }, { translateY: noPosition.y }],
-                },
-              ]}
-              onLayout={(event) => {
-                const { width, height } = event.nativeEvent.layout;
-                setNoSize({ width, height });
-              }}
-              onPressIn={handleNoAttempt}
-            >
+            <Pressable style={[styles.noButton, { opacity: noOpacity }]} onPressIn={handleNoAttempt}>
               <Text style={styles.buttonText}>No</Text>
             </Pressable>
           </View>
@@ -387,19 +350,27 @@ const styles = StyleSheet.create({
   illustration: {
     width: '100%',
     height: 140,
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  subMessage: {
+    textAlign: 'center',
+    color: '#7a4b58',
+    fontSize: 16,
+    marginBottom: 16,
   },
   buttonArena: {
     width: '100%',
-    height: 220,
+    minHeight: 96,
     borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.65)',
     borderWidth: 1,
     borderColor: 'rgba(247, 199, 199, 0.7)',
-    padding: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
+    gap: 16,
   },
   yesButtonWrapper: {
     zIndex: 2,
@@ -432,9 +403,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.45)',
   },
   noButton: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
     backgroundColor: '#f5d8cc',
     paddingHorizontal: 26,
     paddingVertical: 12,
